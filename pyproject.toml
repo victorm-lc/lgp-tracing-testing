@@ -1,0 +1,13 @@
+[project]
+name = "subgraph-interrupts"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=1.0.0a4",
+    "langchain-anthropic>=0.3.19",
+    "langgraph-cli[inmem]>=0.4.2",
+    "langgraph-supervisor>=0.0.29",
+    "langsmith>=0.1.0",
+]
