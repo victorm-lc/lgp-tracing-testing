@@ -9,5 +9,4 @@ dependencies = [
     "langchain-anthropic>=0.3.19",
     "langgraph-cli[inmem]>=0.4.2",
     "langgraph-supervisor>=0.0.29",
-    "langsmith>=0.1.0",
 ]
