@@ -25,8 +25,8 @@ config = {
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
-cd lgp-tracing-alternate-workspace
+gh repo clone victorm-lc/lgp-tracing-testing
+cd lgp-tracing-testing
 
 # Install dependencies with UV
 uv sync
@@ -122,32 +122,6 @@ with tracing_context(enabled=True, client=client, project_name=project_name):
 When deploying to LangGraph Platform:
 
 1. **Set Environment Variables**: Configure `LS_CROSS_WORSKPACE_KEY` in your deployment environment and make sure that the key has access to the necessary workspaces.
-
-
-### Package Configuration
-
-The project is configured for proper deployment with:
-- `pyproject.toml`: Specifies only the `agent.py` module for packaging
-
-This prevents the "Multiple top-level modules" error during deployment.
-
-## Adding New Workspaces
-
-1. Create a new LangSmith client in `agent.py`:
-```python
-workspace_c_client = Client(
-    api_key=api_key,
-    api_url="https://api.smith.langchain.com", 
-    workspace_id="your-workspace-c-id"
-)
-```
-
-2. Add routing logic in the `graph` function:
-```python
-elif workspace_id == "workspace_c":
-    client = workspace_c_client
-    project_name = "test-agent-c"
-```
 
 ## Troubleshooting
 
