@@ -29,19 +29,18 @@ class Configuration(TypedDict):
 class State(TypedDict):
     response: str
 
-def personalized_greeting(state: State, config: RunnableConfig) -> State:
-    '''Generate personalized greeting.'''
+def greeting(state: State, config: RunnableConfig) -> State:
+    '''Generate greeting.'''
     
     # Get workspace info from environment or state
-    workspace_info = "your workspace"
-    response = f"Hello welcome to {workspace_info}! Nice to see you again."
+    response = f"Hello! Nice to see you again."
     return {"response": response}
 
 base_graph = (
     StateGraph(state_schema=State, config_schema=Configuration)
-    .add_node("personalized_greeting", personalized_greeting)
-    .set_entry_point("personalized_greeting")
-    .set_finish_point("personalized_greeting")
+    .add_node("greeting", greeting)
+    .set_entry_point("greeting")
+    .set_finish_point("greeting")
     .compile()
 )
 
@@ -54,14 +53,14 @@ async def graph(config):
     
     if workspace_id == "workspace_a":
         client = workspace_a_client
-        project_name = "math-agent-a"
+        project_name = "test-agent-a"
     elif workspace_id == "workspace_b":
         client = workspace_b_client
-        project_name = "math-agent-b"
+        project_name = "test-agent-b"
     else:
         # Default workspace
         client = workspace_a_client
-        project_name = "math-agent-default"
+        project_name = "test-agent-default"
     
     with tracing_context(enabled=True, client=client, project_name=project_name):
         yield base_graph

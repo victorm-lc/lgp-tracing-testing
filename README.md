@@ -1,23 +1,15 @@
 # LangGraph Multi-Workspace Tracing
 
-A LangGraph agent that demonstrates dynamic workspace routing for LangSmith tracing. This allows you to trace the same agent to different LangSmith workspaces based on configuration.
+A LangGraph agent that routes LangSmith traces to different workspaces based on configuration. Perfect for multi-tenant applications or testing across different environments.
 
 ## Overview
 
-This project shows how to:
-- Route LangSmith traces to different workspaces dynamically
-- Use LangGraph's configuration system for workspace selection
-- Deploy agents that can serve multiple tenants/workspaces
-
-## Architecture
-
-The agent uses a single LangSmith API key with cross-workspace permissions to route traces to different workspaces based on the `workspace_id` configuration parameter.
+Route the same agent to different LangSmith workspaces by setting `workspace_id` in the configuration:
 
 ```python
-# Configuration drives workspace routing
 config = {
     "configurable": {
-        "workspace_id": "workspace_a"  # or "workspace_b"
+        "workspace_id": "workspace_a"  # Routes to workspace A
     }
 }
 ```
@@ -77,34 +69,16 @@ uv run langgraph dev
 
 The agent will start on `http://localhost:8123` (or the port specified by LangGraph).
 
-### 5. Test Different Workspaces
+### 5. Test Workspace Routing
 
-You can test the workspace routing by sending requests with different configurations:
+Open LangGraph Studio at `http://localhost:8123` and test different workspaces:
 
-**Workspace A:**
-```python
-config = {
-    "configurable": {
-        "workspace_id": "workspace_a"
-    }
-}
-```
+1. **In the Studio interface**, set the configuration:
+   - For Workspace A: `{"configurable": {"workspace_id": "workspace_a"}}`
+   - For Workspace B: `{"configurable": {"workspace_id": "workspace_b"}}`
+   - Default: `{"configurable": {}}` (falls back to workspace A)
 
-**Workspace B:**
-```python
-config = {
-    "configurable": {
-        "workspace_id": "workspace_b"
-    }
-}
-```
-
-**Default (falls back to workspace A):**
-```python
-config = {
-    "configurable": {}
-}
-```
+2. **Run the agent** and check your LangSmith workspaces to see traces appearing in the correct workspace.
 
 ## Project Structure
 
@@ -120,56 +94,35 @@ lgp-tracing-alternate-workspace/
 
 ## How It Works
 
-1. **Configuration Schema**: The agent defines a `Configuration` TypedDict that specifies the expected configuration parameters.
+The agent uses a configuration-driven approach to route traces:
 
-2. **Dynamic Client Selection**: Based on the `workspace_id` in the configuration, the agent selects the appropriate LangSmith client.
+1. **Configuration**: Set `workspace_id` in the configurable parameters
+2. **Client Selection**: Agent selects the appropriate LangSmith client based on workspace_id
+3. **Tracing Context**: All operations are traced to the selected workspace using `tracing_context`
 
-3. **Tracing Context**: Uses `tracing_context` to set the LangSmith client and project name for the duration of the graph execution.
-
-4. **Graph Execution**: All traces generated during graph execution are automatically routed to the selected workspace.
-
-## Key Components
-
-### Configuration Schema
+### Core Logic
 ```python
-class Configuration(TypedDict):
-    workspace_id: str
-```
+workspace_id = config.get("configurable", {}).get("workspace_id", "workspace_a")
 
-### Workspace Routing Logic
-```python
-@contextlib.asynccontextmanager
-async def graph(config):
-    workspace_id = config.get("configurable", {}).get("workspace_id", "workspace_a")
-    
-    if workspace_id == "workspace_a":
-        client = workspace_a_client
-        project_name = "math-agent-a"
-    elif workspace_id == "workspace_b":
-        client = workspace_b_client
-        project_name = "math-agent-b"
-    else:
-        client = workspace_a_client
-        project_name = "math-agent-default"
-    
-    with tracing_context(enabled=True, client=client, project_name=project_name):
-        yield base_graph
+if workspace_id == "workspace_a":
+    client = workspace_a_client
+    project_name = "test-agent-a"
+elif workspace_id == "workspace_b":
+    client = workspace_b_client
+    project_name = "test-agent-b"
+
+with tracing_context(enabled=True, client=client, project_name=project_name):
+    yield base_graph
 ```
 
 ## Deployment
 
-### LangGraph Cloud Deployment
+### LangGraph Platform Deployment
 
-When deploying to LangGraph Cloud:
+When deploying to LangGraph Platform:
 
-1. **Set Environment Variables**: Configure `LS_CROSS_WORSKPACE_KEY` in your deployment environment
-2. **Update Workspace IDs**: Replace the workspace IDs in `agent.py` with your actual workspace IDs
-3. **Deploy**: Use `langgraph deploy`
+1. **Set Environment Variables**: Configure `LS_CROSS_WORSKPACE_KEY` in your deployment environment and make sure that the key has access to the necessary workspaces.
 
-```bash
-# Deploy to LangGraph Cloud
-langgraph deploy
-```
 
 ### Package Configuration
 
@@ -178,22 +131,26 @@ The project is configured for proper deployment with:
 
 This prevents the "Multiple top-level modules" error during deployment.
 
-## Troubleshooting
+## Adding New Workspaces
 
-### Common Issues
-
-1. **Authentication Error**: Ensure your API key has access to all target workspaces
-2. **Workspace Not Found**: Verify workspace IDs are correct
-3. **Tracing Not Working**: Check that `LS_CROSS_WORSKPACE_KEY` is set correctly
-
-### Debug Mode
-
-Add debug logging to see workspace selection:
+1. Create a new LangSmith client in `agent.py`:
 ```python
-print(f"Selected workspace: {workspace_id}")
-print(f"Using client for workspace: {client.workspace_id}")
+workspace_c_client = Client(
+    api_key=api_key,
+    api_url="https://api.smith.langchain.com", 
+    workspace_id="your-workspace-c-id"
+)
 ```
 
-## License
+2. Add routing logic in the `graph` function:
+```python
+elif workspace_id == "workspace_c":
+    client = workspace_c_client
+    project_name = "test-agent-c"
+```
 
-MIT License - see LICENSE file for details.
+## Troubleshooting
+
+- **Authentication Error**: Ensure your API key has access to all target workspaces
+- **Workspace Not Found**: Verify workspace IDs are correct in `agent.py`
+- **Tracing Not Working**: Check that `LS_CROSS_WORSKPACE_KEY` is set in your `.env` file
