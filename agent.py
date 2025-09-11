@@ -10,15 +10,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Single API key set by LangGraph platform
-api_key = os.getenv("LS_CROSS_WORSKPACE_KEY")
+#api_key = os.getenv("LS_CROSS_WORSKPACE_KEY")
 
 workspace_a_client = Client(
-    api_key=api_key,
+    #api_key=api_key,
     api_url="https://api.smith.langchain.com",
     workspace_id="1adb79c4-881d-4625-be9c-3118fffb2166" # Replace with your workspace id
 )
 workspace_b_client = Client(
-    api_key=api_key,
+    #api_key=api_key,
     api_url="https://api.smith.langchain.com", 
     workspace_id="ebbaf2eb-769b-4505-aca2-d11de10372a4" # Replace with your workspace id
 )
