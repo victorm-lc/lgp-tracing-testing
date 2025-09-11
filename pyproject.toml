@@ -1,7 +1,7 @@
 [project]
-name = "subgraph-interrupts"
+name = "lgp-tracing-alternate-workspace"
 version = "0.1.0"
-description = "Add your description here"
+description = "LangGraph agent with multi-workspace tracing support"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,4 +9,12 @@ dependencies = [
     "langchain-anthropic>=0.3.19",
     "langgraph-cli[inmem]>=0.4.2",
     "langgraph-supervisor>=0.0.29",
+    "python-dotenv>=1.0.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["agent"]

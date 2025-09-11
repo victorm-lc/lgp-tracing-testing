@@ -8,3 +8,7 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .langgraph_api/
+
+# Development/test files (not needed for deployment)
+example.py
+test_*.py
