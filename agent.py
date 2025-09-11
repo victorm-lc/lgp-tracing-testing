@@ -1,5 +1,6 @@
 import os
 import contextlib
+from langgraph.graph.state import RunnableConfig
 from langsmith import Client
 from langsmith import tracing_context
 from typing_extensions import TypedDict
@@ -9,23 +10,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Single API key set by LangGraph platform
-api_key = os.getenv("LANGCHAIN_API_KEY")
+api_key = os.getenv("LS_CROSS_WORSKPACE_KEY")
 
 workspace_a_client = Client(
     api_key=api_key,
     api_url="https://api.smith.langchain.com",
-    workspace_id="1adb79c4-881d-4625-be9c-3118fffb2166"
+    workspace_id="1adb79c4-881d-4625-be9c-3118fffb2166" # Replace with your workspace id
 )
 workspace_b_client = Client(
     api_key=api_key,
     api_url="https://api.smith.langchain.com", 
-    workspace_id="ebbaf2eb-769b-4505-aca2-d11de10372a4"
+    workspace_id="ebbaf2eb-769b-4505-aca2-d11de10372a4" # Replace with your workspace id
 )
+
+class Configuration(TypedDict):
+    workspace_id: str
 
 class State(TypedDict):
     response: str
 
-def personalized_greeting(state: State) -> State:
+def personalized_greeting(state: State, config: RunnableConfig) -> State:
     '''Generate personalized greeting.'''
     
     # Get workspace info from environment or state
@@ -34,7 +38,7 @@ def personalized_greeting(state: State) -> State:
     return {"response": response}
 
 base_graph = (
-    StateGraph(state_schema=State)
+    StateGraph(state_schema=State, config_schema=Configuration)
     .add_node("personalized_greeting", personalized_greeting)
     .set_entry_point("personalized_greeting")
     .set_finish_point("personalized_greeting")
