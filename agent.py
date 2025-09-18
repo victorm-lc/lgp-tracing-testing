@@ -1,41 +1,59 @@
+"""Cross-workspace tracing example for LangGraph.
+
+This example demonstrates how to dynamically route traces to different
+LangSmith workspaces based on runtime configuration.
+"""
 import os
 import contextlib
-from langgraph.graph.state import RunnableConfig
-from langsmith import Client
-from langsmith import tracing_context
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
-from dotenv import load_dotenv
+from langgraph.graph.state import RunnableConfig
+from langsmith import Client, tracing_context
 
-load_dotenv()
+# API key with access to multiple workspaces
+# Set this as an environment variable in your deployment
+api_key = os.getenv("LS_CROSS_WORKSPACE_KEY")
 
-# Single API key set by LangGraph platform
-api_key = os.getenv("LS_CROSS_WORSKPACE_KEY")
-
+# Initialize clients for different workspaces
+# Replace these with your actual workspace IDs
 workspace_a_client = Client(
     api_key=api_key,
     api_url="https://api.smith.langchain.com",
-    workspace_id="1adb79c4-881d-4625-be9c-3118fffb2166" # Replace with your workspace id
+    workspace_id="<YOUR_WORKSPACE_A_ID>"  # e.g., "abc123..."
 )
 workspace_b_client = Client(
     api_key=api_key,
     api_url="https://api.smith.langchain.com", 
-    workspace_id="ebbaf2eb-769b-4505-aca2-d11de10372a4" # Replace with your workspace id
+    workspace_id="<YOUR_WORKSPACE_B_ID>"  # e.g., "def456..."
 )
 
+# Define configuration schema for workspace routing
 class Configuration(TypedDict):
     workspace_id: str
 
+# Define the graph state
 class State(TypedDict):
     response: str
 
 def greeting(state: State, config: RunnableConfig) -> State:
-    '''Generate greeting.'''
+    """Generate a workspace-specific greeting.
     
-    # Get workspace info from environment or state
-    response = f"Hello! Nice to see you again."
+    This node demonstrates how the same graph can produce
+    different outputs based on workspace configuration.
+    """
+    workspace_id = config.get("configurable", {}).get("workspace_id", "workspace_a")
+    
+    # Demonstrate workspace-specific behavior
+    if workspace_id == "workspace_a":
+        response = "Hello from Workspace A! Processing with production settings."
+    elif workspace_id == "workspace_b":
+        response = "Hello from Workspace B! Processing with development settings."
+    else:
+        response = "Hello from the default workspace!"
+    
     return {"response": response}
 
+# Build the base graph
 base_graph = (
     StateGraph(state_schema=State, config_schema=Configuration)
     .add_node("greeting", greeting)
@@ -46,21 +64,26 @@ base_graph = (
 
 @contextlib.asynccontextmanager
 async def graph(config):
-    """Dynamic workspace routing based on user configuration"""
-    # Access workspace_id from config dictionary
-    workspace_id = config.get("configurable", {}).get("workspace_id", "workspace_a")
-    print(f"Workspace ID: {workspace_id}")
+    """Dynamically route traces to different workspaces based on configuration.
     
+    This context manager wraps the graph execution with the appropriate
+    tracing context based on the workspace_id in the config.
+    """
+    # Extract workspace_id from the configuration
+    workspace_id = config.get("configurable", {}).get("workspace_id", "workspace_a")
+    
+    # Route to the appropriate workspace
     if workspace_id == "workspace_a":
         client = workspace_a_client
-        project_name = "test-agent-a"
+        project_name = "production-traces"
     elif workspace_id == "workspace_b":
         client = workspace_b_client
-        project_name = "test-agent-b"
+        project_name = "development-traces"
     else:
-        # Default workspace
+        # Default to workspace A
         client = workspace_a_client
-        project_name = "test-agent-default"
+        project_name = "default-traces"
     
+    # Apply the tracing context for the selected workspace
     with tracing_context(enabled=True, client=client, project_name=project_name):
         yield base_graph
